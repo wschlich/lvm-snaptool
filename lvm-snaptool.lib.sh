@@ -555,7 +555,7 @@ function bindMountDirectory() {
 	## ----- main -----
 
 	## check for source directory
-	if [ ! -d "${sourceDirectory}" ]; then
+	if [[ ! -d "${sourceDirectory}" ]]; then
 		__msg err "source directory '${sourceDirectory}' doesn't exist"
 		return 2 # error
 	fi
@@ -972,11 +972,9 @@ function printAllMountedVolumes() {
 		## check if mount point is given base directory itself
 		## or below given base directory
 		case "${procMountPoint}" in
-			"${baseDirectory%/}"|"${baseDirectory%/}"/*)
-				;;
-			*)
-				continue
-				;;
+			"${baseDirectory%/}") ;;
+			"${baseDirectory%/}"/*) ;;
+			*) continue ;;
 		esac
 		## finally print device and mount point
 		echo "${procMountDevice}:${procMountPoint}"
