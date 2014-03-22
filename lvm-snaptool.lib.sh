@@ -355,7 +355,7 @@ function createSnapshot() {
 	fi
 
 	## create snapshot volume
-	if ! env LVM_SUPPRESS_FD_WARNINGS=1 lvcreate -s -p r -c 512 -C y --addtag snapshots \
+	if ! env LVM_SUPPRESS_FD_WARNINGS=1 lvcreate -s -p r -c 512 -C y --addtag sysmirror \
 		-L "${snapshotVolumeSize}m" -n "${snapshotVolumeName}" \
 		"${logicalVolumeDevice}" >>"${_L}" 2>&1; then
 		__msg err "failed to create snapshot volume '${snapshotVolumeName}' of" \
@@ -1466,73 +1466,48 @@ function deleteSystemMirror() {
 		return 2 # error
 	fi
 
-	## 1st step: create snapshots of mounted logical volumes
-	## 2nd step: mount snapshots of mounted logical volumes, bind-mount all other mounted volumes
+	## 1st step: unmount mounted volumes (snapshots, bind-mounts)
+	## 2nd step: delete all snapshots tagged with "sysmirror"
 	local deleteMirrorSteps="unmountVolumes deleteSnapshots" deleteMirrorStep
 	for deleteMirrorStep in ${deleteMirrorSteps}; do
 
 		local logPrefix="deleteMirrorStep: ${deleteMirrorStep};"
 
-		## loops through list of all mounted volumes in order to create snapshots
-		local -i i
-		for ((i = 0; i < ${#mountedVolumeArray[@]}; i++)); do
-
-			IFS=':'
-			set -- ${mountedVolumeArray[i]}
-			unset IFS
-			local device=${1}
-			local mountPoint=${2}
-			set --
-			__msg debug "${logPrefix} device: ${device}; mountPoint: ${mountPoint}"
-
-			## if device is a snapshot volume, delete it
-			if deviceIsSnapshotVolume "${device}"; then
-
-				## get logical volume info
-				local logicalVolumeInfo=$(printLogicalVolumeInfo "${device}")
-				local -i returnValue=${?}
-				case ${returnValue} in
-					0)
-						## extract volume group name and logical volume name
-						## from logical volume info
-						IFS='/'
-						set -- ${logicalVolumeInfo}
-						unset IFS
-						local volumeGroupName=${1}
-						local logicalVolumeName=${2}
-						set --
-						__msg debug "${logPrefix} volumeGroupName: ${volumeGroupName}; logicalVolumeName: ${logicalVolumeName}"
-						;;
-					2)
-						__msg err "${logPrefix} failed to print logical volume info for device '${device}'"
-						return 2 # error
-						;;
-					*)
-						__msg err "${logPrefix} undefined return value: ${returnValue}" ## TODO FIXME
-						return 2 # error
-						;;
-				esac
-
-				## delete snapshot
-				if [[ ${deleteMirrorStep} == "deleteSnapshots" ]]; then
-					local snapshotVolumeName=${logicalVolumeName}
-					if ! deleteSnapshot "${volumeGroupName}" "${snapshotVolumeName}"; then
-						__msg err "${logPrefix} failed to delete snapshot volume '${volumeGroupName}/${snapshotVolumeName}'"
-						return 2 # error
-					fi
-				fi
-
-			fi
+		case ${deleteMirrorStep} in
 
 			## unmount volumes
-			if [[ ${deleteMirrorStep} == "unmountVolumes" ]]; then
-				if ! unmount "${mountPoint}"; then
-					__msg err "${logPrefix} failed to unmount '${mountPoint}'"
-					return 2 # error
-				fi
-			fi
+			unmountVolumes)
+				## loops through list of all volumes mounted in snapshot volume mount directory
+				local -i i
+				for ((i = 0; i < ${#mountedVolumeArray[@]}; i++)); do
+					## extract volume info
+					IFS=':'
+					set -- ${mountedVolumeArray[i]}
+					unset IFS
+					local device=${1}
+					local mountPoint=${2}
+					set --
+					__msg debug "${logPrefix} device: ${device}; mountPoint: ${mountPoint}"
+					## unmount volume
+					if ! unmount "${mountPoint}"; then
+						__msg err "${logPrefix} failed to unmount '${mountPoint}'"
+						return 2 # error
+					fi
+				done
+				;;
 
-		done
+			## delete snapshots
+			deleteSnapshots)
+				## remove snapshot volumes
+				if ! env LVM_SUPPRESS_FD_WARNINGS=1 lvremove -f @sysmirror >>"${_L}" 2>&1; then
+					__msg err "${logPrefix}: failed to remove @sysmirror snapshot volumes" 
+					return 2 # error
+				else
+					__msg debug "${logPrefix}: successfully removed @sysmirror snapshot volumes"
+				fi
+				;;
+
+		esac
 
 	done
 
