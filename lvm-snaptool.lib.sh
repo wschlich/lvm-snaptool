@@ -972,8 +972,8 @@ function printAllMountedVolumes() {
 		## check if mount point is given base directory itself
 		## or below given base directory
 		case "${procMountPoint}" in
-			"${baseDirectory%/}") ;;
-			"${baseDirectory%/}"/*) ;;
+			${baseDirectory%/}) ;;
+			${baseDirectory%/}/*) ;;
 			*) continue ;;
 		esac
 		## finally print device and mount point
