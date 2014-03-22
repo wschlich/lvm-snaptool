@@ -488,10 +488,14 @@ function mountSnapshot() {
 	__msg debug "filesystemType: ${filesystemType}"
 	local mountOpts=
 	case "${filesystemType}" in
-		 xfs) mountOpts="nouuid,norecovery,ro" ;; # special options for XFS
-		ext2) mountOpts="ro" ;; # special options for ext2
-		ext3) mountOpts="ro" ;; # special options for ext3
-		   *) mountOpts="ro" ;; # default options
+		xfs)
+			## special mount options for XFS
+			mountOpts="nouuid,norecovery,ro"
+			;;
+		*)
+			## default mount options
+			mountOpts="ro"
+			;;
 	esac
 	__msg debug "mountOpts: ${mountOpts}"
 
@@ -963,7 +967,7 @@ function printAllMountedVolumes() {
 			debugfs|devpts|nfsd|proc|rootfs|securityfs|sysfs|tmpfs|usbfs)
 				continue
 				;;
-			ext2|ext3|jfs|reiserfs|xfs) # TODO FIXME: extend list
+			ext[234]|jfs|reiserfs|xfs) # TODO FIXME: extend list
 				;;
 			*)
 				continue # TODO FIXME: log unsupported fstype?
