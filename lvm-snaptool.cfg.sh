@@ -1,8 +1,11 @@
-## $Id: lvm-snaptool.cfg.sh,v 1.3 2009/05/27 12:20:30 wschlich Exp wschlich $
-## vim:ts=4:sw=4:nu:ai:nowrap:
+## vim:ts=4:sw=4:tw=200:nu:ai:nowrap:
+##
+## application config for lvm-snaptool
 ##
 ## Created by Wolfram Schlich <wschlich@gentoo.org>
 ## Licensed under the GNU GPLv3
+## Web: http://www.bashinator.org/projects/lvm-snaptool/
+## Code: https://github.com/wschlich/lvm-snaptool/
 ##
 
 ##
