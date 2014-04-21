@@ -79,7 +79,7 @@ function __init() {
 				;;
 			## quiet operation
 			q)
-				__MsgQuiet=1
+				declare -i __MsgQuiet=1
 				;;
 			## snapshot volume name suffix
 			s)
@@ -118,23 +118,23 @@ function __init() {
 	## populate logical volume array
 	## from logical volume list
 	IFS=','
-	LogicalVolumeArray=( ${LogicalVolumeList} )
-	unset IFS
+	declare -a LogicalVolumeArray=( ${LogicalVolumeList} )
+	IFS=$' \t\n'
 	#validateLogicalVolumeArray # TODO FIXME: implement function
 	##*/*) # "any/any"
 
 	## populate logical volume exclude array
 	## from logical volume exclude list
 	IFS=','
-	LogicalVolumeExcludeArray=( ${LogicalVolumeExcludeList} )
-	unset IFS
+	declare -a LogicalVolumeExcludeArray=( ${LogicalVolumeExcludeList} )
+	IFS=$' \t\n'
 	#validateLogicalVolumeExcludeArray # TODO FIXME: implement function
 
 	## populate snapshot volume size factor array
 	## from snapshot volume size factor list
 	IFS=','
-	SnapshotVolumeSizeFactorArray=( ${SnapshotVolumeSizeFactor} )
-	unset IFS
+	declare -a SnapshotVolumeSizeFactorArray=( ${SnapshotVolumeSizeFactor} )
+	IFS=$' \t\n'
 	#validateSnapshotVolumeSizeFactorArray # TODO FIXME: implement function
 	##*/*:+([0-9])|*/*:+([0-9].[0-9])) # "any/any:num" or "any/any:num.num"
 	##+([0-9])|+([0-9].[0-9])) # "num" or "num.num"
@@ -142,11 +142,11 @@ function __init() {
 	## populate snapshot volume mount directory array
 	## from snapshot volume mount directory list
 	IFS=','
-	SnapshotVolumeMountDirectoryArray=( ${SnapshotVolumeMountDirectory} )
-	unset IFS
+	declare -a SnapshotVolumeMountDirectoryArray=( ${SnapshotVolumeMountDirectory} )
+	IFS=$' \t\n'
 	#validateSnapshotVolumeMountDirectoryArray # TODO FIXME: implement function
 
-	## system mirror mode
+	## tasks are mode-specific
 	case ${Mode} in
 		mirror)
 			case ${Task} in
@@ -598,7 +598,7 @@ function bindMountDirectory() {
 	local kernelRelease=${kernelRelease/[^0-9.]*/} # strip localversion
 	IFS='.'
 	set -- ${kernelRelease}
-	unset IFS
+	IFS=$' \t\n'
 	local -i kernelVersionMajor=${1}
 	local -i kernelVersionMinor=${2}
 	local -i kernelVersionPatchlevel=${3}
@@ -800,7 +800,7 @@ function mountPointIsBindMount() {
 	IFS=$'\n'
 	local -a mtabMountArray=( $(sort -k 2,2 < /etc/mtab) )
 	local -a sortExitCode=${?}
-	unset IFS
+	IFS=$' \t\n'
 	if [[ ${sortExitCode} -ne 0 ]]; then
 		__msg err "failed sorting /etc/mtab"
 		return 2 # error
@@ -812,7 +812,7 @@ function mountPointIsBindMount() {
 		## split mount line into fields
 		IFS=' '
 		set -- ${mtabMountArray[i]}
-		unset IFS
+		IFS=$' \t\n'
 		#local mtabMountDevice=${1}
 		local mtabMountPoint=${2}
 		#local mtabMountFilesystemType=${3}
@@ -872,7 +872,7 @@ function directoryHasMount() {
 	IFS=$'\n'
 	local -a procMountArray=( $(sort -k 2,2 < /proc/mounts) )
 	local -i sortExitCode=${?}
-	unset IFS
+	IFS=$' \t\n'
 	if [[ ${sortExitCode} -ne 0 ]]; then
 		__msg err "failed sorting /proc/mounts"
 		return 2 # error
@@ -884,7 +884,7 @@ function directoryHasMount() {
 		## split mount line into fields
 		IFS=' '
 		set -- ${procMountArray[i]}
-		unset IFS
+		IFS=$' \t\n'
 		#local procMountDevice=${1}
 		local procMountPoint=${2}
 		#local procMountFilesystemType=${3}
@@ -946,7 +946,7 @@ function printAllMountedVolumes() {
 	IFS=$'\n'
 	local -a procMountArray=( $(sort -k 2,2 ${sortArgs} < /proc/mounts) )
 	local -i sortExitCode=${?}
-	unset IFS
+	IFS=$' \t\n'
 	if [[ ${sortExitCode} -ne 0 ]]; then
 		__msg -q err "failed sorting /proc/mounts"
 		return 2 # error
@@ -958,7 +958,7 @@ function printAllMountedVolumes() {
 		## split mount line into fields
 		IFS=' '
 		set -- ${procMountArray[i]}
-		unset IFS
+		IFS=$' \t\n'
 		local procMountDevice=${1}
 		local procMountPoint=${2}
 		local procMountFilesystemType=${3}
@@ -1098,7 +1098,7 @@ function logicalVolumeIsExcluded() {
 			*/*)
 				IFS='/'
 				set -- ${logicalVolumeExcludeArrayEntry}
-				unset IFS
+				IFS=$' \t\n'
 				local arrayEntryVolumeGroupName=${1}
 				local arrayEntryLogicalVolumeName=${2}
 				set --
@@ -1176,7 +1176,7 @@ function printSnapshotVolumeSizeFactor() {
 			*/*:*)
 				IFS=':'
 				set -- ${snapshotVolumeSizeFactorArrayEntry}
-				unset IFS
+				IFS=$' \t\n'
 				local arrayEntryVolumeGroupName=${1%/*}
 				local arrayEntryLogicalVolumeName=${1#*/}
 				local arrayEntrySnapshotVolumeSizeFactor=${2}
@@ -1275,7 +1275,7 @@ function createSystemMirror() {
 	IFS=$'\n'
 	local -a mountedVolumeArray=( $(printAllMountedVolumes "/" "asc") )
 	local -i returnValue=${?}
-	unset IFS
+	IFS=$' \t\n'
 	case ${returnValue} in
 		0)
 			## check for mounted volumes
@@ -1307,7 +1307,7 @@ function createSystemMirror() {
 
 			IFS=':'
 			set -- ${mountedVolumeArray[i]}
-			unset IFS
+			IFS=$' \t\n'
 			local device=${1}
 			local mountPoint=${2}
 			set --
@@ -1330,7 +1330,7 @@ function createSystemMirror() {
 						## from logical volume info
 						IFS='/'
 						set -- ${logicalVolumeInfo}
-						unset IFS
+						IFS=$' \t\n'
 						local volumeGroupName=${1}
 						local logicalVolumeName=${2}
 						set --
@@ -1461,7 +1461,7 @@ function deleteSystemMirror() {
 	## in descending order (suitable for unmounting)
 	IFS=$'\n'
 	local -a mountedVolumeArray=( $(printAllMountedVolumes "${SnapshotVolumeMountDirectory}" "desc") )
-	unset IFS
+	IFS=$' \t\n'
 
 	## check for mounted volumes
 	if [[ ${#mountedVolumeArray[@]} -eq 0 ]]; then
@@ -1486,7 +1486,7 @@ function deleteSystemMirror() {
 					## extract volume info
 					IFS=':'
 					set -- ${mountedVolumeArray[i]}
-					unset IFS
+					IFS=$' \t\n'
 					local device=${1}
 					local mountPoint=${2}
 					set --
